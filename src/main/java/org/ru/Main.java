@@ -1,7 +1,9 @@
 package org.ru;
 
 public class Main {
+
     public static void main(String[] args) {
-        System.out.println("Hello world!");
+        FileDependencyResolver fileDependencyResolver = new FileDependencyResolver();
+        fileDependencyResolver.startResolving("D:\\Programms\\DoczillaTask\\src\\main\\resources\\test-folder");
     }
 }
