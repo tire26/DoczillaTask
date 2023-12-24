@@ -29,7 +29,6 @@ public class GetStudentsServlet extends HttpServlet {
 
         resp.setContentType("application/json");
         resp.setCharacterEncoding("UTF-8");
-
         resp.getWriter().write(jsonStudents);
         resp.setStatus(HttpServletResponse.SC_OK);
     }
