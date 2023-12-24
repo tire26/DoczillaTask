@@ -4,4 +4,4 @@
 - Собрать проект с помошью mvn package
 - Файл Student_webapp.war поместить в webapps
 - Запустить apache tomcat сервер.
-- ПО url http://localhost:8080/ открыть клиент
+- По url http://localhost:8080/ открыть клиент
