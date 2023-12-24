@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+</head>
+<body>
+
+<div id="header">
+    <label for="taskSearch"></label>
+    <input type="text" id="taskSearch" placeholder="Поиск по названию">
+    <div id="avatarIcon">Avatar Icon</div>
+</div>
+
+<div id="mainContainer">
+
+    <div id="leftPanel">
+        <button onclick="getTasksByToday()" style="border: none; border-radius: 15px; padding: 10px; cursor: pointer;">
+            Сегодня
+        </button>
+        <button onclick="getTasksByWeek()" style="border: none; border-radius: 15px; padding: 10px; cursor: pointer;">На
+            неделю
+        </button>
+        <div id="calendar"></div>
+        <div id="dateSelectionNote">Для выбора диапазона кликните на разные даты, для выбора одной - кликните на неё 2
+            раза.
+        </div>
+        <label id="uncompletedTasksLabel" for="uncompletedTasks">
+            <input type="checkbox" id="uncompletedTasks">
+            Только невыполненные
+        </label>
+    </div>
+
+    <div id="rightPanel">
+        <div id="selectedDate"></div>
+        <button onclick="sortTasksByDate()" style="border: none; border-radius: 15px; padding: 10px; cursor: pointer;">
+            Сортировать по дате
+        </button>
+        <div id="taskContainer"></div>
+    </div>
+
+</div>
+
+<script>
+    $(document).ready(function () {
+        $("#calendar").datepicker({
+            onSelect: function (dateText) {
+                handleDateSelection(dateText);
+            }
+        });
+        $("#taskSearch").on("input", function () {
+            searchTasks();
+        });
+
+        $("#uncompletedTasks").change(function () {
+            searchTasks();
+        });
+    });
+
+    var selectedDates = [];
+
+    function handleDateSelection(dateText) {
+        if (selectedDates.length === 0) {
+            selectedDates.push(dateText);
+        } else if (selectedDates.length === 1 && selectedDates[0] !== dateText) {
+            selectedDates.push(dateText);
+            getTasksByDateRange(selectedDates[0], selectedDates[1]);
+            highlightDateRange(selectedDates[0], selectedDates[1]);
+        } else {
+            selectedDates = [];
+            clearDateHighlights();
+        }
+    }
+
+    function searchTasks() {
+        $("#taskContainer").empty();
+
+        const searchValue = $("#taskSearch").val();
+
+        if (searchValue.trim() !== "") {
+            $.ajax({
+                url: "https://todo.doczilla.pro/api/todos/find",
+                data: {q: searchValue},
+                dataType: "jsonp",
+                success: function (data) {
+                    data.forEach(function (task) {
+                        displayTask(task);
+                    });
+                }
+            });
+        }
+    }
+
+    function displayTask(task) {
+        const taskContainer = $("#taskContainer");
+
+        if (task.status !== $("#uncompletedTasks").prop("checked")) {
+            return;
+        }
+
+        const taskElement = $("<div></div>")
+            .addClass("task")
+            .toggleClass("taskCompleted", task.status)
+            .html(`<div>${task.name}</div>
+               <div>${task.shortDesc}</div>
+               <div>${task.date}</div>`)
+            .click(function () {
+                openTaskDetails(task);
+            });
+
+        taskContainer.append(taskElement);
+    }
+
+    function getTasksByToday()
+    {
+        $("#taskContainer").empty();
+
+        getTodayDate();
+        const statusFilter = $("#uncompletedTasks").prop("checked");
+
+        var proxyUrl = "http://localhost:8080/DoczillaTask_war_exploded/proxy?url=https://todo.doczilla.pro/api/todos/date";
+
+        var queryParams = {
+            from: 1637539200000,
+            to: 1637712000000,
+            status: statusFilter
+        };
+
+        var queryString = Object.keys(queryParams)
+            .map(key => encodeURIComponent(key) + "=" + encodeURIComponent(queryParams[key]))
+            .join("&");
+
+        var fullUrl = proxyUrl + "&" + queryString;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", fullUrl, true);
+        xhr.send();
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var tasks = JSON.parse(xhr.responseText);
+                tasks.forEach(function (task) {
+                    displayTask(task);
+                });
+            } else if (xhr.status !== 200) {
+                alert("Failed to get students.");
+            }
+        };
+    }
+
+
+    function getTasksByWeek() {
+        $("#taskContainer").empty();
+
+        const currentDate = new Date();
+        const startOfWeek = new Date(currentDate.setDate(currentDate.getDate() - currentDate.getDay()));
+        const endOfWeek = new Date(currentDate.setDate(startOfWeek.getDate() + 6));
+
+        const startOfWeekFormatted = startOfWeek.toISOString().split('T')[0];
+        const endOfWeekFormatted = endOfWeek.toISOString().split('T')[0];
+
+        const statusFilter = $("#uncompletedTasks").prop("checked");
+
+        $.ajax({
+            url: "https://todo.doczilla.pro/api/todos/date",
+            data: {from: Date.parse(startOfWeekFormatted), to: Date.parse(endOfWeekFormatted), status: statusFilter},
+            dataType: "jsonp",
+            success: function (data) {
+                data.forEach(function (task) {
+                    displayTask(task);
+                });
+            }
+        });
+    }
+
+
+    function getTasksByDateRange(from, to) {
+        $("#taskContainer").empty();
+
+        const statusFilter = $("#uncompletedTasks").prop("checked");
+
+        $.ajax({
+            url: "https://todo.doczilla.pro/api/todos/date",
+            data: {from: Date.parse(from), to: Date.parse(to), status: statusFilter},
+            dataType: "jsonp",
+            success: function (data) {
+                data.forEach(function (task) {
+                    displayTask(task);
+                });
+            }
+        });
+    }
+
+    function openTaskDetails(task) {
+        const overlay = $("<div></div>").attr("id", "taskDetailsOverlay");
+        const container = $("<div></div>").attr("id", "taskDetailsContainer");
+
+        container.append(`<h2>${task.name}</h2>`);
+        container.append(`<div>Date: ${task.date}</div>`);
+        container.append("<hr>");
+        container.append(`<div id="taskDetailsContent">${task.fullDesc}</div>`);
+        container.append(`<button id="closeTaskDetails" onclick="closeTaskDetails()">Готово</button>`);
+
+        $("body").append(overlay);
+        $("body").append(container);
+
+        overlay.fadeIn();
+    }
+
+    function highlightDateRange(start, end) {
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+
+        $("#calendar").datepicker("widget").find(".ui-datepicker-calendar a").each(function () {
+            const currentDate = new Date($(this).attr("data-year"), $(this).attr("data-month"), $(this).text());
+
+            if (currentDate >= startDate && currentDate <= endDate) {
+                $(this).addClass("date-range-highlight");
+            }
+        });
+    }
+
+    function clearDateHighlights() {
+        $("#calendar").datepicker("widget").find(".ui-datepicker-calendar a").removeClass("date-range-highlight");
+    }
+
+    function getTodayDate() {
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = String(today.getMonth() + 1).padStart(2, '0');
+        const day = String(today.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function closeTaskDetails() {
+        // Закрываем overlay и удаляем контейнер с деталями задачи
+        $("#taskDetailsOverlay, #taskDetailsContainer").fadeOut(function () {
+            $(this).remove();
+        });
+    }
+</script>
+
+</body>
+</html>
