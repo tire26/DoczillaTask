@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Student Management</h1>
+
+<form id="addStudentForm">
+    <label for="firstName">First Name:</label>
+    <input type="text" id="firstName" required>
+    <br>
+    <label for="lastName">Last Name:</label>
+    <input type="text" id="lastName" required>
+    <br>
+    <label for="middleName">Middle Name:</label>
+    <input type="text" id="middleName">
+    <br>
+    <label for="birthDate">Birth Date (yyyy-MM-dd):</label>
+    <input type="text" id="birthDate" required>
+    <br>
+    <label for="groupNumber">Group Number:</label>
+    <input type="text" id="groupNumber" required>
+    <br>
+    <label for="uniqueNumber">Unique Number:</label>
+    <input type="text" id="uniqueNumber" required>
+    <br>
+    <button type="button" onclick="addStudent()">Add Student</button>
+</form>
+
+<hr>
+
+<form id="deleteStudentForm">
+    <label for="deleteStudentId">Student Unique Number:</label>
+    <input type="text" id="deleteStudentId" required>
+    <br>
+    <button type="button" onclick="deleteStudent()">Delete Student</button>
+</form>
+
+<hr>
+
+<button type="button" onclick="getStudents()">Get Students</button>
+
+<div id="studentList"></div>
+
+<script>
+    function addStudent() {
+        var firstName = document.getElementById("firstName").value;
+        var lastName = document.getElementById("lastName").value;
+        var middleName = document.getElementById("middleName").value;
+        var birthDate = document.getElementById("birthDate").value;
+        var groupNumber = document.getElementById("groupNumber").value;
+        var uniqueNumber = document.getElementById("uniqueNumber").value;
+
+        var student = {
+            "firstName": firstName,
+            "lastName": lastName,
+            "middleName": middleName,
+            "birthDate": birthDate,
+            "group": groupNumber,
+            "uniqueNumber": uniqueNumber
+        };
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "http://localhost:8080/Student_webapp/addStudent", true);
+        xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+        xhr.send(JSON.stringify(student));
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4) {
+                if (xhr.status === 200) {
+                    alert("Student added successfully!");
+                    clearForm();
+                    getStudents(); // обновляем список студентов после добавления
+                } else {
+                    alert("Failed to add student.");
+                }
+            }
+        };
+    }
+
+    function deleteStudent() {
+        var studentId = document.getElementById("deleteStudentId").value;
+
+        var xhr = new XMLHttpRequest();
+        xhr.open("DELETE", "http://localhost:8080/Student_webapp/deleteStudent?uniqueNumber=" + studentId, true);
+        xhr.send();
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                alert("Student deleted successfully!");
+                clearForm();
+                getStudents(); // обновляем список студентов после удаления
+            } else if (xhr.status !== 200) {
+                alert("Failed to delete student.");
+            }
+        };
+    }
+
+    function getStudents() {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", "http://localhost:8080/Student_webapp/getStudents", true);
+        xhr.send();
+
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                var students = JSON.parse(xhr.responseText);
+                displayStudents(students);
+            } else if (xhr.status !== 200) {
+                alert("Failed to get students.");
+            }
+        };
+    }
+
+    function displayStudents(students) {
+        var studentListDiv = document.getElementById("studentList");
+        studentListDiv.innerHTML = "<h2>Student List:</h2>";
+
+        if (students.length === 0) {
+            studentListDiv.innerHTML += "<p>No students available.</p>";
+        } else {
+            // Создаем таблицу
+            var table = document.createElement("table");
+            table.border = "1";
+
+            // Создаем заголовки таблицы (исключаем поле "id")
+            var headerRow = table.insertRow(0);
+            for (var key in students[0]) {
+                if (key !== "id") {
+                    var headerCell = document.createElement("th");
+                    headerCell.textContent = key;
+                    headerRow.appendChild(headerCell);
+                }
+            }
+
+            // Заполняем таблицу данными (исключаем поле "id")
+            for (var i = 0; i < students.length; i++) {
+                var row = table.insertRow(i + 1);
+                for (var key in students[i]) {
+                    if (key !== "id") {
+                        var cell = row.insertCell(-1);
+                        // Если поле содержит "Date", форматируем дату
+                        var value = key.includes("Date") ? formatMillisecondsToDateString(students[i][key]) : students[i][key];
+                        cell.textContent = value;
+                    }
+                }
+            }
+
+            studentListDiv.appendChild(table);
+        }
+    }
+
+    function formatMillisecondsToDateString(milliseconds) {
+        var date = new Date(milliseconds);
+        var options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+        return date.toLocaleDateString('en-US', options);
+    }
+
+    function clearForm() {
+        document.getElementById("firstName").value = "";
+        document.getElementById("lastName").value = "";
+        document.getElementById("middleName").value = "";
+        document.getElementById("birthDate").value = "";
+        document.getElementById("groupNumber").value = "";
+        document.getElementById("uniqueNumber").value = "";
+    }
+</script>
+</body>
+</html>
