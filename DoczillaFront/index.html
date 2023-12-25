@@ -125,9 +125,10 @@
 
         var proxyUrl = "http://localhost:8080/DoczillaTask_war_exploded/proxy?url=https://todo.doczilla.pro/api/todos/date";
 
+        var currDate = getTodayDate()
         var queryParams = {
-            from: 1637539200000,
-            to: 1637712000000,
+            from: Date.parse(currDate),
+            to: Date.parse(currDate),
             status: statusFilter
         };
 

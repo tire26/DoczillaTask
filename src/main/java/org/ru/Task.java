@@ -22,7 +22,6 @@ public class Task {
         this.status = status;
     }
 
-    // Геттеры и сеттеры для каждого поля
 
     public String getId() {
         return id;

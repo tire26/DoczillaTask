@@ -1,0 +1,5 @@
+- Файл index.html и style.css переместить внутрь папки webapps/ROOT в вашем каталоге Tomcat.
+- Собрать проект с помошью mvn package
+- Файл DoczillaTask_war_exploded.war поместить в webapps
+- Запустить apache tomcat сервер.
+- По url http://localhost:8080/ открыть клиент
